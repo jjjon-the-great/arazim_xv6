@@ -23,49 +23,104 @@ void read_pipe(int pipe[2], char * message){
 }
 */
 void send_int (int pipe[2], int arg){
-  char dummy[1];
-  for (int i = 0; i < 4; i++){
-    dummy[0] = (char) ('\0' + (arg%256));
-    write(pipe[1], dummy, 1);
-    sleep(1);
-    arg = arg/256;
-  }
+  //printf("sending %d\n", arg);
+  write(pipe[1], &arg, 4);
   return;
 }
 
 int receive_int (int pipe[2]){
-  int result = 0;
-  char target[5];
-  for (int i = 0; i < 4; i++){
-    read(pipe[0], target, 1);
-    printf("recieved %c ", target[0]);
-    result += (int)(target[0]) * (1 << (8 * i));
+  int result = 67;
+  if (read(pipe[0], &result, 4)==-1){
+    printf("read ERROR\n");
+    exit(0);
   }
+  //printf("recieved: %d\n", result);
   return result;
 }
 
+void print_int(int arg){
+  printf("%d is prime\n", arg);
+  return;
+}
+
+/*
+void layer_logic(int p[2], int max_depth){
+  //first capture
+  if (max_depth == 0) {
+    return;
+  }
+  //printf("hi!");
+  //printf("first:");
+  int first = receive_int(p);
+  print_int(first);
+  //printf("next:");
+  int target;
+  target = receive_int(p);
+  //printf("new target: %d\n", target);
+  if (target == 0){
+    exit(0);
+  } else {
+    int new_pipe[2];
+    if (pipe(new_pipe) == -1) {
+      printf("PIPE ERROR\n");
+    }
+    if (fork() == 0){
+      layer_logic(new_pipe, max_depth - 1);
+    } else {
+      while(target != 0){
+        if (target % first != 0) send_int(new_pipe, target);
+        target = receive_int(p);
+      }
+      send_int(new_pipe, 0);
+      close(new_pipe[1]);
+      exit(0);
+    }
+  }
+}
+*/
+
+void new_layer_logic(int p[2], int max_depth, int max_numbers, int feedback[2]){
+  if (max_depth == 0) return;
+  int args[max_numbers];
+  int i = 0;
+  while (1){
+    args[i] = receive_int(p);
+    if (args[i] == 0) break;
+    i++;
+  }
+  printf("prime %d\n", args[0]);
+  if (args[1] == 0) {
+    send_int(feedback, 0);
+    close(feedback[1]);
+    exit(0);
+  }
+
+  if (fork() == 0){
+    new_layer_logic(p, max_depth - 1, max_numbers, feedback);
+  } else {
+    for (int j = 1; j <= i; j ++){
+      if (args[j] % args[0] != 0 || args[j] == 0) send_int(p, args[j]);
+    }
+    exit(0);
+  }
+}
 
 int
 main(int argc, char *argv[])
 {
-  //testing protocol
   int p[2];
   pipe(p);
+  int feedback[2];
+  pipe(feedback);
   if (fork() == 0){
-    write(1, "c", 1);
-    int ans;
-    ans = receive_int(p);
-    write(1, "d", 1);
-    printf("is: %d",ans);
-    close(p[1]);
-    exit(0);
+    new_layer_logic(p, 100, 37, feedback);
   } else {
-    write(1,"a",1);
-    int message = 69;
-    send_int(p, message);
-    write(1, "b", 1);
-    close(p[0]);
+    for (int i = 2; i < 36; i++){
+      send_int(p, i);
+    }
+    send_int(p, 0);
+    receive_int(feedback);
+    close(feedback[0]);
     exit(0);
   }
-  exit(0);
 }

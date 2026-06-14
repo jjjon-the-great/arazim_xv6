@@ -2,28 +2,7 @@
 #include "kernel/stat.h"
 #include "user/user.h"
 
-//void int_to_byte_arr(int arg, char * bytes);
-
-/*protocol with -1 as terminator message.*/
-/*
-void send_pipe(int message, int pipe[2]){
-  char bytes[4];
-  int_to_byte_arr(message, bytes);
-  write(pipe[0], bytes, 4);
-  int dummy;
-  read(pipe[1], &dummy, 1); //wait until release accepted.
-  return;
-}
-
-void read_pipe(int pipe[2], char * message){
-  int reply = -1;
-  read(pipe[1], message, 4);
-  write(pipe[0], &reply, 1);
-  return;
-}
-*/
 void send_int (int pipe[2], int arg){
-  //printf("sending %d\n", arg);
   write(pipe[1], &arg, 4);
   return;
 }
@@ -34,50 +13,8 @@ int receive_int (int pipe[2]){
     printf("read ERROR\n");
     exit(0);
   }
-  //printf("recieved: %d\n", result);
   return result;
 }
-
-void print_int(int arg){
-  printf("%d is prime\n", arg);
-  return;
-}
-
-/*
-void layer_logic(int p[2], int max_depth){
-  //first capture
-  if (max_depth == 0) {
-    return;
-  }
-  //printf("hi!");
-  //printf("first:");
-  int first = receive_int(p);
-  print_int(first);
-  //printf("next:");
-  int target;
-  target = receive_int(p);
-  //printf("new target: %d\n", target);
-  if (target == 0){
-    exit(0);
-  } else {
-    int new_pipe[2];
-    if (pipe(new_pipe) == -1) {
-      printf("PIPE ERROR\n");
-    }
-    if (fork() == 0){
-      layer_logic(new_pipe, max_depth - 1);
-    } else {
-      while(target != 0){
-        if (target % first != 0) send_int(new_pipe, target);
-        target = receive_int(p);
-      }
-      send_int(new_pipe, 0);
-      close(new_pipe[1]);
-      exit(0);
-    }
-  }
-}
-*/
 
 void new_layer_logic(int p[2], int max_depth, int * args){
   if (max_depth == 0) return;

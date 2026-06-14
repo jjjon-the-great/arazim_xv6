@@ -79,9 +79,8 @@ void layer_logic(int p[2], int max_depth){
 }
 */
 
-void new_layer_logic(int p[2], int max_depth, int max_numbers){
+void new_layer_logic(int p[2], int max_depth, int * args){
   if (max_depth == 0) return;
-  int args[max_numbers];
   int i = 0;
   while (1){
     args[i] = receive_int(p);
@@ -92,7 +91,7 @@ void new_layer_logic(int p[2], int max_depth, int max_numbers){
   if (args[1] == 0) exit(0);
 
   if (fork() == 0){
-    new_layer_logic(p, max_depth - 1, max_numbers);
+    new_layer_logic(p, max_depth - 1, args);
   } else {
     for (int j = 1; j <= i; j ++){
       if (args[j] % args[0] != 0 || args[j] == 0) send_int(p, args[j]);
@@ -106,17 +105,19 @@ void new_layer_logic(int p[2], int max_depth, int max_numbers){
 int
 main(int argc, char *argv[])
 {
+  //37 for default
+  int max_num = 37;
+  int storage[max_num];
   int p[2];
   pipe(p);
   int child;
   if ((child = fork()) == 0){
-    new_layer_logic(p, 100, 37);
+    new_layer_logic(p, 100, storage);
   } else {
-    for (int i = 2; i < 36; i++){
+    for (int i = 2; i < max_num; i++){
       send_int(p, i);
     }
     send_int(p, 0);
-    //receive_int(feedback);
     int status;
     wait(&status);
     exit(0);

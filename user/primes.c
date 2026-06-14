@@ -79,7 +79,7 @@ void layer_logic(int p[2], int max_depth){
 }
 */
 
-void new_layer_logic(int p[2], int max_depth, int max_numbers, int feedback[2]){
+void new_layer_logic(int p[2], int max_depth, int max_numbers){
   if (max_depth == 0) return;
   int args[max_numbers];
   int i = 0;
@@ -89,18 +89,16 @@ void new_layer_logic(int p[2], int max_depth, int max_numbers, int feedback[2]){
     i++;
   }
   printf("prime %d\n", args[0]);
-  if (args[1] == 0) {
-    send_int(feedback, 0);
-    close(feedback[1]);
-    exit(0);
-  }
+  if (args[1] == 0) exit(0);
 
   if (fork() == 0){
-    new_layer_logic(p, max_depth - 1, max_numbers, feedback);
+    new_layer_logic(p, max_depth - 1, max_numbers);
   } else {
     for (int j = 1; j <= i; j ++){
       if (args[j] % args[0] != 0 || args[j] == 0) send_int(p, args[j]);
     }
+    int status;
+    wait(&status);
     exit(0);
   }
 }
@@ -110,17 +108,17 @@ main(int argc, char *argv[])
 {
   int p[2];
   pipe(p);
-  int feedback[2];
-  pipe(feedback);
-  if (fork() == 0){
-    new_layer_logic(p, 100, 37, feedback);
+  int child;
+  if ((child = fork()) == 0){
+    new_layer_logic(p, 100, 37);
   } else {
     for (int i = 2; i < 36; i++){
       send_int(p, i);
     }
     send_int(p, 0);
-    receive_int(feedback);
-    close(feedback[0]);
+    //receive_int(feedback);
+    int status;
+    wait(&status);
     exit(0);
   }
 }
